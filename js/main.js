@@ -63,23 +63,15 @@
 
   // ── Expandable service cards ───────────────────────────
   $$('.service-card--expandable').forEach(card => {
-    const toggle = card.querySelector('.service-card__toggle');
-    if (!toggle) return;
+    card.addEventListener('click', e => {
+      // Let the Learn More link navigate normally
+      if (e.target.closest('.service-card__link')) return;
 
-    toggle.addEventListener('click', e => {
-      e.stopPropagation();
       const isExpanded = card.classList.contains('expanded');
       // Collapse all others
-      $$('.service-card--expandable').forEach(c => {
-        c.classList.remove('expanded');
-        const t = c.querySelector('.service-card__toggle');
-        if (t) t.setAttribute('aria-expanded', 'false');
-      });
+      $$('.service-card--expandable').forEach(c => c.classList.remove('expanded'));
       // Toggle this one
-      if (!isExpanded) {
-        card.classList.add('expanded');
-        toggle.setAttribute('aria-expanded', 'true');
-      }
+      if (!isExpanded) card.classList.add('expanded');
     });
   });
 
