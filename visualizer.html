@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Epoxy Floor Visualizer — Beach Construction LLC</title>
+  <meta name="description" content="Upload a photo of your floor and preview epoxy colors and flake styles. Free tool from Beach Construction LLC in Brainerd, MN." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Visualizer-specific styles ── */
+    .visualizer-wrap {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    .visualizer-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.75rem;
+      position: sticky;
+      top: calc(var(--nav-h) + 1rem);
+    }
+    .visualizer-panel__title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-group {
+      margin-bottom: 1.5rem;
+    }
+    .panel-group__label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.65rem;
+      display: block;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .upload-zone__icon { color: var(--accent); margin-bottom: 0.5rem; }
+    .upload-zone__text { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+    .upload-zone__text strong { color: var(--text); }
+    #fileInput { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    /* Color swatches */
+    .color-swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .swatch {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 2px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .swatch:hover { transform: scale(1.1); }
+    .swatch.active {
+      border-color: var(--text);
+      transform: scale(1.1);
+    }
+    .swatch-label {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .swatch-item { display: flex; flex-direction: column; }
+
+    /* Flake styles */
+    .flake-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .flake-btn {
+      padding: 0.5rem 0.4rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      text-align: center;
+      font-family: var(--font-body);
+    }
+    .flake-btn:hover { color: var(--text); border-color: var(--accent); }
+    .flake-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Opacity slider */
+    .slider-wrap { display: flex; align-items: center; gap: 0.75rem; }
+    .viz-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 3px;
+      background: var(--border);
+      outline: none;
+      border-radius: 2px;
+    }
+    .viz-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    .slider-val { font-size: 0.72rem; color: var(--text-muted); min-width: 32px; text-align: right; }
+
+    /* Canvas area */
+    .canvas-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      position: relative;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .canvas-wrap canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 70vh;
+    }
+    .canvas-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      color: var(--text-dim);
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+    .canvas-placeholder__icon { color: var(--accent); opacity: 0.4; }
+    .canvas-placeholder__text { font-size: 0.82rem; line-height: 1.6; max-width: 280px; }
+
+    /* Disclaimer */
+    .disclaimer {
+      background: var(--surface-2);
+      border: 1px solid var(--border-accent);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.25rem;
+      margin-top: 1.25rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .disclaimer strong { color: var(--text); }
+
+    /* Reset btn */
+    .reset-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.6rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: var(--font-body);
+      margin-top: 1rem;
+    }
+    .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    @media (max-width: 900px) {
+      .visualizer-wrap { grid-template-columns: 1fr; }
+      .visualizer-panel { position: static; }
+    }
+  </style>
+</head>
+<body>
+<nav class="nav" id="nav">
+  <div class="container"><div class="nav__inner">
+    <a href="index.html" class="nav__logo"><span class="nav__logo-name">Beach<span>.</span></span><span class="nav__logo-sub">Construction LLC</span></a>
+    <ul class="nav__links">
+      <li><a href="index.html" class="nav__link">Home</a></li>
+      <li class="nav__dropdown"><a href="#" class="nav__link">Services <span class="nav__chevron">▾</span></a>
+        <div class="nav__dropdown-menu">
+          <a href="services/epoxy-flooring.html" class="nav__dropdown-item">Epoxy Flooring</a>
+          <a href="services/concrete-staining.html" class="nav__dropdown-item">Concrete Staining</a>
+          <a href="services/cut-buff-polish.html" class="nav__dropdown-item">Cut &amp; Buff Polish</a>
+          <a href="services/countertops.html" class="nav__dropdown-item">Countertops &amp; Bar Tops</a>
+          <a href="services/commercial-floors.html" class="nav__dropdown-item">Commercial Floors</a>
+          <a href="services/driveways.html" class="nav__dropdown-item">Driveways &amp; Sidewalks</a>
+        </div>
+      </li>
+      <li><a href="about.html" class="nav__link">About</a></li>
+      <li><a href="contact.html" class="nav__link nav__cta">Free Quote</a></li>
+    </ul>
+    <button class="nav__burger" id="burger" aria-label="Open menu"><span></span><span></span><span></span></button>
+  </div></div>
+</nav>
+<div class="nav__mobile" id="mobileNav">
+  <button class="nav__mobile-close" id="mobileClose">✕</button>
+  <div class="nav__mobile-section"><a href="index.html" class="nav__mobile-link mobile-link">Home</a></div>
+  <div class="nav__mobile-section">
+    <a href="services/epoxy-flooring.html" class="nav__mobile-sub mobile-link">Epoxy Flooring</a>
+    <a href="services/concrete-staining.html" class="nav__mobile-sub mobile-link">Concrete Staining</a>
+    <a href="services/cut-buff-polish.html" class="nav__mobile-sub mobile-link">Cut &amp; Buff Polish</a>
+    <a href="services/countertops.html" class="nav__mobile-sub mobile-link">Countertops &amp; Bar Tops</a>
+    <a href="services/commercial-floors.html" class="nav__mobile-sub mobile-link">Commercial Floors</a>
+    <a href="services/driveways.html" class="nav__mobile-sub mobile-link">Driveways</a>
+  </div>
+  <div class="nav__mobile-section"><a href="about.html" class="nav__mobile-link mobile-link">About</a></div>
+  <div class="nav__mobile-section"><a href="contact.html" class="nav__mobile-link mobile-link" style="color:var(--accent)">Free Quote</a></div>
+</div>
+
+<!-- Hero -->
+<section class="section section--dark" style="padding-top:calc(var(--nav-h) + 3rem);padding-bottom:3rem">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-header__eyebrow"><div class="section-header__eyebrow-line"></div><span class="label">Color Tool</span></div>
+      <h1 class="section-header__title">Floor<br><em>Visualizer.</em></h1>
+      <p class="section-header__body">Upload a photo of your floor and preview epoxy colors and flake styles — before you commit to anything.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt" style="padding-top:3rem">
+  <div class="container">
+    <div class="visualizer-wrap">
+
+      <!-- Controls Panel -->
+      <div class="visualizer-panel reveal">
+        <div class="visualizer-panel__title">Controls</div>
+
+        <!-- Upload -->
+        <div class="panel-group">
+          <span class="panel-group__label">1. Upload Your Floor Photo</span>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept="image/*" />
+            <div class="upload-zone__icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="22" height="22" rx="2"/><path d="M3 19l6-6 4 4 4-4 8 8"/><circle cx="19" cy="9" r="2"/></svg>
+            </div>
+            <div class="upload-zone__text"><strong>Click or drag</strong> a photo of<br>your floor to get started</div>
+          </div>
+        </div>
+
+        <!-- Base Color -->
+        <div class="panel-group">
+          <span class="panel-group__label">2. Choose Epoxy Color</span>
+          <div class="color-swatches" id="colorSwatches">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- Flake Style -->
+        <div class="panel-group">
+          <span class="panel-group__label">3. Flake Style</span>
+          <div class="flake-options" id="flakeOptions">
+            <button class="flake-btn active" data-flake="none">No Flake</button>
+            <button class="flake-btn" data-flake="light">Light (1/4")</button>
+            <button class="flake-btn" data-flake="medium">Medium (1/8")</button>
+            <button class="flake-btn" data-flake="full">Full Broadcast</button>
+            <button class="flake-btn" data-flake="custom">Custom Blend</button>
+            <button class="flake-btn" data-flake="metallic">Metallic</button>
+          </div>
+        </div>
+
+        <!-- Opacity -->
+        <div class="panel-group">
+          <span class="panel-group__label">Color Intensity</span>
+          <div class="slider-wrap">
+            <input type="range" class="viz-slider" id="opacitySlider" min="20" max="85" value="55" />
+            <span class="slider-val" id="opacityVal">55%</span>
+          </div>
+        </div>
+
+        <!-- Flake opacity (only shown when flake selected) -->
+        <div class="panel-group" id="flakeOpacityGroup" style="display:none">
+          <span class="panel-group__label">Flake Coverage</span>
+          <div class="slider-wrap">
+            <input type="range" class="viz-slider" id="flakeSlider" min="10" max="90" value="45" />
+            <span class="slider-val" id="flakeVal">45%</span>
+          </div>
+        </div>
+
+        <button class="reset-btn" id="resetBtn">↺ Reset Visualizer</button>
+
+        <div class="disclaimer">
+          <strong>Disclaimer:</strong> This tool is an approximation only. Actual epoxy colors, textures, and flake patterns will vary based on your concrete surface, lighting conditions, and application method. Results shown here are not a guarantee of finished appearance. Contact us for an on-site consultation and physical color samples.
+        </div>
+
+        <a href="contact.html" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:1.25rem">Get a Free Quote <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+
+      <!-- Canvas Area -->
+      <div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <div class="canvas-placeholder" id="canvasPlaceholder">
+            <div class="canvas-placeholder__icon">
+              <svg width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="1"><rect x="6" y="6" width="44" height="44" rx="3"/><path d="M6 38l12-12 8 8 8-8 16 16"/><circle cx="38" cy="18" r="5"/></svg>
+            </div>
+            <div class="canvas-placeholder__text">Upload a floor photo to preview epoxy colors and flake styles on your actual space.</div>
+          </div>
+          <canvas id="vizCanvas" style="display:none"></canvas>
+        </div>
+
+        <!-- How to use -->
+        <div style="margin-top:1.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+          <div style="padding:1rem;background:var(--surface);border:1px solid var(--border)">
+            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--accent);line-height:1;margin-bottom:0.4rem">01</div>
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.25rem">Upload Photo</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.5">Take a photo of your floor (any angle, daylight preferred) and upload it here.</div>
+          </div>
+          <div style="padding:1rem;background:var(--surface);border:1px solid var(--border)">
+            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--accent);line-height:1;margin-bottom:0.4rem">02</div>
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.25rem">Pick Color &amp; Flake</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.5">Select a base coat color and flake style, then adjust intensity to your preference.</div>
+          </div>
+          <div style="padding:1rem;background:var(--surface);border:1px solid var(--border)">
+            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--accent);line-height:1;margin-bottom:0.4rem">03</div>
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.25rem">Request Samples</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.5">See something you like? Contact us for physical color chips and an on-site quote.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="cta-banner section--alt">
+  <div class="container"><div class="cta-banner__content reveal">
+    <h2 class="cta-banner__title">See It<br><em>In Person.</em></h2>
+    <p class="cta-banner__sub">The visualizer gives you a starting point — physical color chips on your actual slab tell the full story. Free on-site visit, no pressure.</p>
+    <div class="cta-banner__actions">
+      <a href="contact.html" class="btn btn-primary">Request Color Samples <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a href="tel:+12188383422" class="cta-banner__phone"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h4l2 5-2.5 1.5a11 11 0 005 5L13 12l5 2v4a1 1 0 01-1 1C7 19 1 13 1 4a1 1 0 011-1"/></svg>(218) 838-3422</a>
+    </div>
+  </div></div>
+</section>
+
+<footer class="footer"><div class="container">
+  <div class="footer__top">
+    <div><div class="footer__brand-name">Beach<span>.</span><br>Construction LLC</div><p class="footer__brand-tagline">Professional epoxy coatings, concrete staining, and surface solutions throughout central Minnesota.</p><div class="footer__warranty-badge">◆ Licensed &amp; Insured — MN</div></div>
+    <div><div class="footer__col-title">Company</div><ul class="footer__col-links"><li><a href="about.html">About Us</a></li><li><a href="contact.html">Free Quote</a></li></ul></div>
+    <div><div class="footer__col-title">Contact</div><ul class="footer__col-links"><li><a href="tel:+12188383422">(218) 838-3422</a></li><li><a href="mailto:info@beachconstructionllc.com">info@beachconstructionllc.com</a></li><li style="color:var(--text-muted);font-size:0.84rem">Brainerd, MN</li></ul></div>
+  </div>
+  <div class="footer__bottom"><span>© 2025 Beach Construction LLC — Brainerd, MN</span><span>11-Month Warranty on All Epoxy Installs</span></div>
+</div></footer>
+
+<script src="js/main.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ── Color palette ──────────────────────────────────────
+  const COLORS = [
+    { name: 'Jet Black',     hex: '#0D0B09', r:  13, g:  11, b:   9 },
+    { name: 'Warm Black',    hex: '#1A1710', r:  26, g:  23, b:  16 },
+    { name: 'Charcoal',      hex: '#2E2B22', r:  46, g:  43, b:  34 },
+    { name: 'Gold',          hex: '#C9A84C', r: 201, g: 168, b:  76 },
+    { name: 'Champagne',     hex: '#E2C06A', r: 226, g: 192, b: 106 },
+    { name: 'Warm Bronze',   hex: '#8B6914', r: 139, g: 105, b:  20 },
+    { name: 'Slate Gray',    hex: '#6B7280', r: 107, g: 114, b: 128 },
+    { name: 'Silver',        hex: '#9CA3AF', r: 156, g: 163, b: 175 },
+    { name: 'Warm Tan',      hex: '#C4A77D', r: 196, g: 167, b: 125 },
+    { name: 'Sandstone',     hex: '#D4B896', r: 212, g: 184, b: 150 },
+    { name: 'Terracotta',    hex: '#B5654A', r: 181, g: 101, b:  74 },
+    { name: 'Forest Green',  hex: '#2D6A4F', r:  45, g: 106, b:  79 },
+    { name: 'Navy',          hex: '#1A2744', r:  26, g:  39, b:  68 },
+    { name: 'Burgundy',      hex: '#7B2D42', r: 123, g:  45, b:  66 },
+    { name: 'Off White',     hex: '#F5F0EA', r: 245, g: 240, b: 234 },
+  ];
+
+  // Flake color palettes (used in overlay)
+  const FLAKE_PALETTES = {
+    none:     [],
+    light:    ['#C4A77D','#9CA3AF','#374151'],
+    medium:   ['#C4A77D','#9CA3AF','#374151','#F5F0EA'],
+    full:     ['#C4A77D','#9CA3AF','#374151','#F5F0EA','#6B7280'],
+    custom:   ['#B5654A','#2A7A6A','#F5F0EA','#374151','#C4A77D'],
+    metallic: ['#C9A84C','#E2C06A','#8B6914','#D4AF37','#F0D080'],
+  };
+
+  // ── State ──────────────────────────────────────────────
+  let state = {
+    img: null,
+    color: COLORS[0],
+    flake: 'none',
+    opacity: 55,
+    flakeOpacity: 45,
+  };
+
+  // ── DOM refs ───────────────────────────────────────────
+  const canvas        = document.getElementById('vizCanvas');
+  const ctx           = canvas.getContext('2d');
+  const placeholder   = document.getElementById('canvasPlaceholder');
+  const fileInput     = document.getElementById('fileInput');
+  const uploadZone    = document.getElementById('uploadZone');
+  const opacitySlider = document.getElementById('opacitySlider');
+  const opacityVal    = document.getElementById('opacityVal');
+  const flakeSlider   = document.getElementById('flakeSlider');
+  const flakeVal      = document.getElementById('flakeVal');
+  const flakeGroup    = document.getElementById('flakeOpacityGroup');
+  const resetBtn      = document.getElementById('resetBtn');
+
+  // ── Build color swatches ───────────────────────────────
+  const swatchWrap = document.getElementById('colorSwatches');
+  COLORS.forEach((c, i) => {
+    const item = document.createElement('div');
+    item.className = 'swatch-item';
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (i === 0 ? ' active' : '');
+    sw.style.background = c.hex;
+    sw.title = c.name;
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+      state.color = c;
+      render();
+    });
+    item.appendChild(sw);
+    swatchWrap.appendChild(item);
+  });
+
+  // ── Flake buttons ──────────────────────────────────────
+  document.querySelectorAll('.flake-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.flake-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.flake = btn.dataset.flake;
+      flakeGroup.style.display = state.flake === 'none' ? 'none' : 'block';
+      render();
+    });
+  });
+
+  // ── Sliders ────────────────────────────────────────────
+  opacitySlider.addEventListener('input', () => {
+    state.opacity = parseInt(opacitySlider.value);
+    opacityVal.textContent = state.opacity + '%';
+    render();
+  });
+  flakeSlider.addEventListener('input', () => {
+    state.flakeOpacity = parseInt(flakeSlider.value);
+    flakeVal.textContent = state.flakeOpacity + '%';
+    render();
+  });
+
+  // ── File upload ────────────────────────────────────────
+  fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  });
+
+  function loadFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        state.img = img;
+        placeholder.style.display = 'none';
+        canvas.style.display = 'block';
+        render();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Reset ──────────────────────────────────────────────
+  resetBtn.addEventListener('click', () => {
+    state.img = null;
+    state.color = COLORS[0];
+    state.flake = 'none';
+    state.opacity = 55;
+    state.flakeOpacity = 45;
+    opacitySlider.value = 55;
+    opacityVal.textContent = '55%';
+    flakeSlider.value = 45;
+    flakeVal.textContent = '45%';
+    flakeGroup.style.display = 'none';
+    document.querySelectorAll('.swatch').forEach((s, i) => s.classList.toggle('active', i === 0));
+    document.querySelectorAll('.flake-btn').forEach(b => b.classList.toggle('active', b.dataset.flake === 'none'));
+    canvas.style.display = 'none';
+    placeholder.style.display = 'flex';
+    fileInput.value = '';
+  });
+
+  // ── Render ─────────────────────────────────────────────
+  function render() {
+    if (!state.img) return;
+
+    const MAX_W = 900, MAX_H = 700;
+    let w = state.img.naturalWidth;
+    let h = state.img.naturalHeight;
+    const ratio = Math.min(MAX_W / w, MAX_H / h, 1);
+    w = Math.round(w * ratio);
+    h = Math.round(h * ratio);
+
+    canvas.width  = w;
+    canvas.height = h;
+
+    // Draw original photo
+    ctx.drawImage(state.img, 0, 0, w, h);
+
+    // Color overlay (multiply-style blend via source-over with opacity)
+    const alpha = state.opacity / 100;
+    const { r, g, b } = state.color;
+    ctx.globalAlpha = alpha * 0.72;
+    ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillRect(0, 0, w, h);
+
+    // Restore photo tones underneath via soft-light layer
+    ctx.globalAlpha = 0.18;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(state.img, 0, 0, w, h);
+
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Flake overlay
+    if (state.flake !== 'none') {
+      drawFlakes(w, h);
+    }
+
+    // Subtle sheen gradient at top
+    const sheen = ctx.createLinearGradient(0, 0, w * 0.6, h * 0.6);
+    sheen.addColorStop(0,   'rgba(255,255,255,0.06)');
+    sheen.addColorStop(0.4, 'rgba(255,255,255,0.02)');
+    sheen.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function drawFlakes(w, h) {
+    const palette = FLAKE_PALETTES[state.flake];
+    if (!palette.length) return;
+
+    // Number of flakes scales with area and coverage
+    const area = w * h;
+    const coverage = state.flakeOpacity / 100;
+    const count = Math.floor(area * coverage * 0.003);
+
+    const flakeAlpha = Math.min(0.9, coverage * 1.1);
+    ctx.globalAlpha = flakeAlpha;
+
+    for (let i = 0; i < count; i++) {
+      const x    = Math.random() * w;
+      const y    = Math.random() * h;
+      const size = 2 + Math.random() * 5;
+      const angle = Math.random() * Math.PI * 2;
+      const color = palette[Math.floor(Math.random() * palette.length)];
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+
+      // Irregular flake shape
+      ctx.beginPath();
+      ctx.moveTo(0, -size * 0.5);
+      ctx.lineTo(size * 0.3, -size * 0.1);
+      ctx.lineTo(size * 0.5, size * 0.4);
+      ctx.lineTo(-size * 0.2, size * 0.5);
+      ctx.lineTo(-size * 0.5, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+})();
+</script>
+</body></html>
