@@ -139,7 +139,7 @@
 
           <div data-fs-error class="form-error-global" style="display:none"></div>
 
-          <form id="contactForm" novalidate>
+          <form id="contactForm" action="https://formspree.io/f/mwvwnrld" method="POST" novalidate>
             <div class="form-grid">
               <div class="form-group">
                 <label for="name">Full Name</label>
@@ -248,9 +248,8 @@
   </div>
 </footer>
 <script src="js/main.js"></script>
+<script src="https://unpkg.com/@formspree/ajax@1"></script>
 <script>
-  window.formspree = window.formspree || function () { (formspree.q = formspree.q || []).push(arguments); };
   formspree('initForm', { formElement: '#contactForm', formId: 'mwvwnrld' });
 </script>
-<script src="https://unpkg.com/@formspree/ajax@1" defer></script>
 </body></html>
