@@ -130,24 +130,34 @@
       <!-- Contact Form -->
       <div class="reveal reveal-delay-2">
         <div class="contact-form-wrap">
+
+          <div data-fs-success class="form-success" style="display:none">
+            <div class="form-success__icon">◆</div>
+            <div class="form-success__title">Quote Request Sent!</div>
+            <p class="form-success__body">We'll follow up within one business day to schedule your free on-site estimate. You can also reach us directly at <a href="tel:+12188383422">(218) 838-3422</a>.</p>
+          </div>
+
+          <div data-fs-error class="form-error-global" style="display:none"></div>
+
           <form id="contactForm" novalidate>
             <div class="form-grid">
               <div class="form-group">
                 <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" placeholder="Your name" required />
+                <input type="text" id="name" name="name" placeholder="Your name" required data-fs-field />
               </div>
               <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" name="phone" placeholder="(218) 000-0000" />
+                <input type="tel" id="phone" name="phone" placeholder="(218) 000-0000" data-fs-field />
               </div>
             </div>
             <div class="form-group">
               <label for="email">Email Address</label>
-              <input type="email" id="email" name="email" placeholder="you@example.com" required />
+              <input type="email" id="email" name="email" placeholder="you@example.com" required data-fs-field />
+              <span data-fs-error="email" class="form-field-error"></span>
             </div>
             <div class="form-group">
               <label for="service">Service Interested In</label>
-              <select id="service" name="service">
+              <select id="service" name="service" data-fs-field>
                 <option value="">Select a service…</option>
                 <option>Epoxy Flooring</option>
                 <option>Concrete Staining</option>
@@ -162,9 +172,9 @@
             </div>
             <div class="form-group">
               <label for="details">Project Details</label>
-              <textarea id="details" name="details" placeholder="Describe your project — approximate size, location, timeline, any specific needs or questions…" style="min-height:140px"></textarea>
+              <textarea id="details" name="details" placeholder="Describe your project — approximate size, location, timeline, any specific needs or questions…" style="min-height:140px" data-fs-field></textarea>
             </div>
-            <button type="submit" class="form-submit">Request Free Quote →</button>
+            <button type="submit" class="form-submit" data-fs-submit-btn>Request Free Quote →</button>
             <p class="form-note">We respond within one business day. No spam, no pressure.</p>
           </form>
         </div>
@@ -238,4 +248,9 @@
   </div>
 </footer>
 <script src="js/main.js"></script>
+<script>
+  window.formspree = window.formspree || function () { (formspree.q = formspree.q || []).push(arguments); };
+  formspree('initForm', { formElement: '#contactForm', formId: 'mwvwnrld' });
+</script>
+<script src="https://unpkg.com/@formspree/ajax@1" defer></script>
 </body></html>
