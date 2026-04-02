@@ -111,19 +111,6 @@
     });
   });
 
-  // ── Form submit ───────────────────────────────────────
-  const form = $('#contactForm');
-  if (form) {
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const btn = form.querySelector('.form-submit');
-      btn.textContent = '✓ Request Sent — We\'ll Be In Touch Soon';
-      btn.style.background = '#2d7a3a';
-      btn.disabled = true;
-      // Wire to Formspree / EmailJS / backend here
-    });
-  }
-
   // ── Smooth anchor scroll ──────────────────────────────
   $$('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
