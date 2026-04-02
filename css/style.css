@@ -599,7 +599,7 @@ body::after {
   background: none;
   border: none;
   border-bottom: 1px solid var(--accent);
-  padding: 0 0 2px 0;
+  padding: 0.6rem 0.5rem 0.5rem 0;
   margin-bottom: 1rem;
   font-size: 0.82rem;
   font-weight: 700;
@@ -608,6 +608,9 @@ body::after {
   cursor: pointer;
   text-transform: uppercase;
   transition: color 0.2s, border-color 0.2s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
 }
 .service-card__toggle:hover { color: var(--accent-light); border-color: var(--accent-light); }
 .service-card__toggle-icon {
