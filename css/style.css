@@ -443,8 +443,9 @@ body::after {
 .page-hero__title em { font-style: normal; color: var(--accent); display: block; }
 .page-hero__sub {
   max-width: 560px;
-  font-size: 1.05rem;
-  color: var(--text-muted);
+  font-size: 1.1rem;
+  color: rgba(245, 239, 224, 0.85);
+  font-weight: 400;
   line-height: 1.7;
   margin-top: 1.5rem;
 }
@@ -1174,7 +1175,7 @@ body::after {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgba(245, 239, 224, 0.75);
   margin-top: 3px;
 }
 
